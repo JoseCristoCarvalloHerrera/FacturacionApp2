@@ -12,9 +12,12 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import ni.edu.uam.facturacion.dao.CategoriaDAO;
+import ni.edu.uam.facturacion.exception.Campo;
+import ni.edu.uam.facturacion.exception.ValidacionException;
 import ni.edu.uam.facturacion.model.Categoria;
 import ni.edu.uam.facturacion.util.Alertas;
 import ni.edu.uam.facturacion.util.SceneManager;
+import ni.edu.uam.facturacion.validacion.ValidadorCategoria;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -62,15 +65,15 @@ public class CategoriaController {
 
     @FXML
     private void guardar() {
-        if (!validar()) {
-            return;
-        }
-
         Categoria categoria = new Categoria(
                 null,
                 txtNombre.getText().trim(),
                 chkActiva.isSelected()
         );
+
+        if (!validarCategoria(categoria)) {
+            return;
+        }
 
         try {
             categoriaDAO.guardar(categoria);
@@ -89,15 +92,18 @@ public class CategoriaController {
             return;
         }
 
-        if (!validar()) {
+        Categoria categoria = new Categoria(
+                categoriaSeleccionada.getId(),
+                txtNombre.getText().trim(),
+                chkActiva.isSelected()
+        );
+
+        if (!validarCategoria(categoria)) {
             return;
         }
 
-        categoriaSeleccionada.setNombre(txtNombre.getText().trim());
-        categoriaSeleccionada.setActiva(chkActiva.isSelected());
-
         try {
-            categoriaDAO.actualizar(categoriaSeleccionada);
+            categoriaDAO.actualizar(categoria);
             Alertas.exito("Categoría actualizada", "La categoría se actualizó correctamente.");
             limpiar();
             cargarCategorias();
@@ -162,12 +168,22 @@ public class CategoriaController {
         }
     }
 
-    private boolean validar() {
-        if (txtNombre.getText() == null || txtNombre.getText().isBlank()) {
-            Alertas.advertencia("El nombre de la categoría es obligatorio.");
-            txtNombre.requestFocus();
+    private boolean validarCategoria(Categoria categoria) {
+
+        try {
+            ValidadorCategoria.validar(categoria);
+            return true;
+        } catch (ValidacionException e) {
+            Alertas.advertencia(e.getMessage());
+            enfocar(e.getCampo());
             return false;
         }
-        return true;
+    }
+
+    private void enfocar(Campo campo) {
+
+        if (campo == Campo.CATEGORIA_NOMBRE) {
+            txtNombre.requestFocus();
+        }
     }
 }
