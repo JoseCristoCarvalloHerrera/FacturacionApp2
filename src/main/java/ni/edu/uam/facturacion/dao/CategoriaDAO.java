@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -130,6 +131,57 @@ public class CategoriaDAO {
 
             ps.executeUpdate();
         }
+    }
+
+    public boolean existeNombre(String nombre, Integer idExcluido) throws SQLException {
+
+        String sql = """
+                SELECT COUNT(*)
+                FROM categoria
+                WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(?))
+                  AND (? IS NULL OR id <> ?)
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setString(1, nombre);
+            ps.setObject(2, idExcluido, Types.INTEGER);
+            ps.setObject(3, idExcluido, Types.INTEGER);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public boolean tieneProductos(int categoriaId) throws SQLException {
+
+        String sql = """
+                SELECT COUNT(*)
+                FROM producto
+                WHERE categoria_id = ?
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setInt(1, categoriaId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+
+        return false;
     }
 
     private Categoria mapear(ResultSet rs) throws SQLException {
