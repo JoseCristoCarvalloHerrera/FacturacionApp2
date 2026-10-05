@@ -235,8 +235,13 @@ public class ProductoController {
         chkActivo.setSelected(producto.isActivo());
 
         // Se busca por id porque el objeto del ComboBox es otra instancia
+        if (producto.getCategoria() == null || producto.getCategoria().getId() == null) {
+            cmbCategoria.getSelectionModel().clearSelection();
+            return;
+        }
+
         cmbCategoria.getItems().stream()
-                .filter(c -> c.getId().equals(producto.getCategoria().getId()))
+                .filter(c -> c.getId() != null && c.getId().equals(producto.getCategoria().getId()))
                 .findFirst()
                 .ifPresentOrElse(
                         c -> cmbCategoria.getSelectionModel().select(c),
