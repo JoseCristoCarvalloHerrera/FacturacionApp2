@@ -7,8 +7,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
@@ -19,6 +17,7 @@ import ni.edu.uam.facturacion.dao.CategoriaDAO;
 import ni.edu.uam.facturacion.dao.ProductoDAO;
 import ni.edu.uam.facturacion.model.Categoria;
 import ni.edu.uam.facturacion.model.Producto;
+import ni.edu.uam.facturacion.util.Alertas;
 import ni.edu.uam.facturacion.util.SceneManager;
 
 import java.io.IOException;
@@ -109,18 +108,18 @@ public class ProductoController {
 
         try {
             productoDAO.guardar(producto);
-            mostrarMensaje(Alert.AlertType.INFORMATION, "Producto guardado correctamente.");
+            Alertas.exito("Producto registrado", "El producto se guardó correctamente.");
             limpiar();
             cargarProductos();
         } catch (SQLException e) {
-            mostrarMensaje(Alert.AlertType.ERROR, "No se pudo guardar: " + e.getMessage());
+            Alertas.error("Error de base de datos", "No se pudo guardar: " + e.getMessage());
         }
     }
 
     @FXML
     private void actualizar() {
         if (productoSeleccionado == null) {
-            mostrarMensaje(Alert.AlertType.WARNING, "Seleccione un producto de la tabla.");
+            Alertas.advertencia("Seleccione un producto de la tabla.");
             return;
         }
 
@@ -133,25 +132,24 @@ public class ProductoController {
 
         try {
             productoDAO.actualizar(producto);
-            mostrarMensaje(Alert.AlertType.INFORMATION, "Producto actualizado correctamente.");
+            Alertas.exito("Producto actualizado", "El producto se actualizó correctamente.");
             limpiar();
             cargarProductos();
         } catch (SQLException e) {
-            mostrarMensaje(Alert.AlertType.ERROR, "No se pudo actualizar: " + e.getMessage());
+            Alertas.error("Error de base de datos", "No se pudo actualizar: " + e.getMessage());
         }
     }
 
     @FXML
     private void eliminar() {
         if (productoSeleccionado == null) {
-            mostrarMensaje(Alert.AlertType.WARNING, "Seleccione un producto de la tabla.");
+            Alertas.advertencia("Seleccione un producto de la tabla.");
             return;
         }
 
-        Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION,
-                "¿Eliminar el producto \"" + productoSeleccionado.getNombre() + "\"?");
+        String mensaje = "¿Eliminar el producto \"" + productoSeleccionado.getNombre() + "\"?";
 
-        if (confirmacion.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+        if (!Alertas.confirmar("Eliminar producto", mensaje)) {
             return;
         }
 
@@ -160,7 +158,7 @@ public class ProductoController {
             limpiar();
             cargarProductos();
         } catch (SQLException e) {
-            mostrarMensaje(Alert.AlertType.ERROR, "No se pudo eliminar: " + e.getMessage());
+            Alertas.error("Error de base de datos", "No se pudo eliminar: " + e.getMessage());
         }
     }
 
@@ -212,7 +210,7 @@ public class ProductoController {
 
         if (codigo.isEmpty() || nombre.isEmpty() || categoria == null
                 || txtPrecio.getText().isBlank() || txtExistencia.getText().isBlank()) {
-            mostrarMensaje(Alert.AlertType.WARNING, "Complete los campos obligatorios.");
+            Alertas.advertencia("Complete los campos obligatorios.");
             return null;
         }
 
@@ -222,14 +220,16 @@ public class ProductoController {
         try {
             precio = new BigDecimal(txtPrecio.getText().trim());
         } catch (NumberFormatException e) {
-            mostrarMensaje(Alert.AlertType.WARNING, "El precio debe ser un número, por ejemplo 25.50");
+            Alertas.advertencia("El precio debe ser un número, por ejemplo 25.50");
+            txtPrecio.requestFocus();
             return null;
         }
 
         try {
             existencia = Integer.parseInt(txtExistencia.getText().trim());
         } catch (NumberFormatException e) {
-            mostrarMensaje(Alert.AlertType.WARNING, "La existencia debe ser un número entero.");
+            Alertas.advertencia("La existencia debe ser un número entero.");
+            txtExistencia.requestFocus();
             return null;
         }
 
@@ -251,7 +251,8 @@ public class ProductoController {
         try {
             cmbCategoria.setItems(FXCollections.observableArrayList(categoriaDAO.listarActivas()));
         } catch (SQLException e) {
-            mostrarMensaje(Alert.AlertType.ERROR, "No se pudieron cargar las categorías: " + e.getMessage());
+            Alertas.error("Error de base de datos",
+                    "No se pudieron cargar las categorías: " + e.getMessage());
         }
     }
 
@@ -259,13 +260,8 @@ public class ProductoController {
         try {
             productos.setAll(productoDAO.listar());
         } catch (SQLException e) {
-            mostrarMensaje(Alert.AlertType.ERROR, "No se pudieron cargar los productos: " + e.getMessage());
+            Alertas.error("Error de base de datos",
+                    "No se pudieron cargar los productos: " + e.getMessage());
         }
-    }
-
-    private void mostrarMensaje(Alert.AlertType tipo, String mensaje) {
-        Alert alert = new Alert(tipo, mensaje);
-        alert.setHeaderText(null);
-        alert.showAndWait();
     }
 }

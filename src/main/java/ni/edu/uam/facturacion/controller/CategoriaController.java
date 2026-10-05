@@ -6,8 +6,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -15,6 +13,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import ni.edu.uam.facturacion.dao.CategoriaDAO;
 import ni.edu.uam.facturacion.model.Categoria;
+import ni.edu.uam.facturacion.util.Alertas;
 import ni.edu.uam.facturacion.util.SceneManager;
 
 import java.io.IOException;
@@ -75,18 +74,18 @@ public class CategoriaController {
 
         try {
             categoriaDAO.guardar(categoria);
-            mostrarMensaje(Alert.AlertType.INFORMATION, "Categoría guardada correctamente.");
+            Alertas.exito("Categoría registrada", "La categoría se guardó correctamente.");
             limpiar();
             cargarCategorias();
         } catch (SQLException e) {
-            mostrarMensaje(Alert.AlertType.ERROR, "No se pudo guardar: " + e.getMessage());
+            Alertas.error("Error de base de datos", "No se pudo guardar: " + e.getMessage());
         }
     }
 
     @FXML
     private void actualizar() {
         if (categoriaSeleccionada == null) {
-            mostrarMensaje(Alert.AlertType.WARNING, "Seleccione una categoría de la tabla.");
+            Alertas.advertencia("Seleccione una categoría de la tabla.");
             return;
         }
 
@@ -99,25 +98,24 @@ public class CategoriaController {
 
         try {
             categoriaDAO.actualizar(categoriaSeleccionada);
-            mostrarMensaje(Alert.AlertType.INFORMATION, "Categoría actualizada correctamente.");
+            Alertas.exito("Categoría actualizada", "La categoría se actualizó correctamente.");
             limpiar();
             cargarCategorias();
         } catch (SQLException e) {
-            mostrarMensaje(Alert.AlertType.ERROR, "No se pudo actualizar: " + e.getMessage());
+            Alertas.error("Error de base de datos", "No se pudo actualizar: " + e.getMessage());
         }
     }
 
     @FXML
     private void eliminar() {
         if (categoriaSeleccionada == null) {
-            mostrarMensaje(Alert.AlertType.WARNING, "Seleccione una categoría de la tabla.");
+            Alertas.advertencia("Seleccione una categoría de la tabla.");
             return;
         }
 
-        Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION,
-                "¿Eliminar la categoría \"" + categoriaSeleccionada.getNombre() + "\"?");
+        String mensaje = "¿Eliminar la categoría \"" + categoriaSeleccionada.getNombre() + "\"?";
 
-        if (confirmacion.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+        if (!Alertas.confirmar("Eliminar categoría", mensaje)) {
             return;
         }
 
@@ -126,8 +124,7 @@ public class CategoriaController {
             limpiar();
             cargarCategorias();
         } catch (SQLException e) {
-            // La llave foránea impide borrar una categoría que tiene productos
-            mostrarMensaje(Alert.AlertType.ERROR,
+            Alertas.error("Error de base de datos",
                     "No se puede eliminar porque tiene productos asociados. "
                             + "Desmarque \"Activa\" para desactivarla.");
         }
@@ -160,21 +157,17 @@ public class CategoriaController {
         try {
             categorias.setAll(categoriaDAO.listar());
         } catch (SQLException e) {
-            mostrarMensaje(Alert.AlertType.ERROR, "No se pudieron cargar las categorías: " + e.getMessage());
+            Alertas.error("Error de base de datos",
+                    "No se pudieron cargar las categorías: " + e.getMessage());
         }
     }
 
     private boolean validar() {
         if (txtNombre.getText() == null || txtNombre.getText().isBlank()) {
-            mostrarMensaje(Alert.AlertType.WARNING, "El nombre es obligatorio.");
+            Alertas.advertencia("El nombre de la categoría es obligatorio.");
+            txtNombre.requestFocus();
             return false;
         }
         return true;
-    }
-
-    private void mostrarMensaje(Alert.AlertType tipo, String mensaje) {
-        Alert alert = new Alert(tipo, mensaje);
-        alert.setHeaderText(null);
-        alert.showAndWait();
     }
 }
