@@ -12,6 +12,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import ni.edu.uam.facturacion.dao.CategoriaDAO;
+import ni.edu.uam.facturacion.dao.SqlError;
 import ni.edu.uam.facturacion.exception.Campo;
 import ni.edu.uam.facturacion.exception.ValidacionException;
 import ni.edu.uam.facturacion.model.Categoria;
@@ -153,9 +154,15 @@ public class CategoriaController {
             limpiar();
             cargarCategorias();
         } catch (SQLException e) {
-            Alertas.error("Error de base de datos",
-                    "No se puede eliminar porque tiene productos asociados. "
-                            + "Desmarque \"Activa\" para desactivarla.");
+            if (SqlError.esLlaveForanea(e)) {
+                Alertas.error("Error de base de datos",
+                        "No se puede eliminar la categoría \"" + categoriaSeleccionada.getNombre()
+                                + "\" porque tiene productos asociados. "
+                                + "Desmarque \"Activa\" para desactivarla.");
+                return;
+            }
+
+            Alertas.error("Error de base de datos", "No se pudo completar la operación.");
         }
     }
 
