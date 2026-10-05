@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -136,6 +137,33 @@ public class ProductoDAO {
 
             ps.executeUpdate();
         }
+    }
+
+    public boolean existeCodigo(String codigo, Integer idExcluido) throws SQLException {
+
+        String sql = """
+                SELECT COUNT(*)
+                FROM producto
+                WHERE codigo = ?
+                  AND (? IS NULL OR id <> ?)
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setString(1, codigo);
+            ps.setObject(2, idExcluido, Types.INTEGER);
+            ps.setObject(3, idExcluido, Types.INTEGER);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+
+        return false;
     }
 
     private Producto mapear(ResultSet rs) throws SQLException {
