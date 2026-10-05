@@ -15,6 +15,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import ni.edu.uam.facturacion.dao.CategoriaDAO;
 import ni.edu.uam.facturacion.dao.ProductoDAO;
+import ni.edu.uam.facturacion.dao.SqlError;
 import ni.edu.uam.facturacion.exception.Campo;
 import ni.edu.uam.facturacion.exception.ValidacionException;
 import ni.edu.uam.facturacion.model.Categoria;
@@ -123,6 +124,13 @@ public class ProductoController {
             Alertas.advertencia(e.getMessage());
             enfocar(e.getCampo());
         } catch (SQLException e) {
+            if (SqlError.esCodigoDuplicado(e)) {
+                Alertas.advertencia("Código duplicado",
+                        "Ya existe un producto con el código \"" + txtCodigo.getText().trim() + "\".");
+                enfocar(Campo.PRODUCTO_CODIGO);
+                return;
+            }
+
             Alertas.error("Error de base de datos", "No se pudo guardar: " + e.getMessage());
         }
     }
@@ -155,6 +163,13 @@ public class ProductoController {
             Alertas.advertencia(e.getMessage());
             enfocar(e.getCampo());
         } catch (SQLException e) {
+            if (SqlError.esCodigoDuplicado(e)) {
+                Alertas.advertencia("Código duplicado",
+                        "Ya existe otro producto con el código \"" + txtCodigo.getText().trim() + "\".");
+                enfocar(Campo.PRODUCTO_CODIGO);
+                return;
+            }
+
             Alertas.error("Error de base de datos", "No se pudo actualizar: " + e.getMessage());
         }
     }
@@ -178,7 +193,13 @@ public class ProductoController {
             limpiar();
             cargarProductos();
         } catch (SQLException e) {
-            Alertas.error("Error de base de datos", "No se pudo eliminar: " + e.getMessage());
+            if (SqlError.esLlaveForanea(e)) {
+                Alertas.error("Error de base de datos",
+                        "No se pudo eliminar el producto \"" + productoSeleccionado.getNombre() + "\".");
+                return;
+            }
+
+            Alertas.error("Error de base de datos", "No se pudo completar la operación.");
         }
     }
 
