@@ -110,6 +110,13 @@ public class CategoriaController {
         }
 
         try {
+            if (categoriaDAO.existeNombre(categoria.getNombre(), categoria.getId())) {
+                Alertas.advertencia("Nombre duplicado",
+                        "Ya existe otra categoría con el nombre \"" + categoria.getNombre() + "\".");
+                enfocar(Campo.CATEGORIA_NOMBRE);
+                return;
+            }
+
             categoriaDAO.actualizar(categoria);
             Alertas.exito("Categoría actualizada", "La categoría se actualizó correctamente.");
             limpiar();
