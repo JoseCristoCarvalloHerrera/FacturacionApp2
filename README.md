@@ -52,7 +52,7 @@ JavaFX (FXML)  →  Controller  →  DAO  →  PostgreSQL
 CREATE DATABASE tienda_javafx;
 ```
 
-2. Conectado a `tienda_javafx`, crear las tablas:
+2. Conectado a `tienda_javafx`, crear las tablas (también disponible en `sql/schema.sql`):
 
 ```sql
 CREATE TABLE categoria (
@@ -60,6 +60,8 @@ CREATE TABLE categoria (
     nombre VARCHAR(100) NOT NULL,
     activa BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+CREATE UNIQUE INDEX ux_categoria_nombre ON categoria (LOWER(TRIM(nombre)));
 
 CREATE TABLE producto (
     id SERIAL PRIMARY KEY,
@@ -74,6 +76,8 @@ CREATE TABLE producto (
     CONSTRAINT fk_producto_categoria
         FOREIGN KEY (categoria_id)
         REFERENCES categoria(id)
+            ON UPDATE CASCADE
+            ON DELETE RESTRICT
 );
 ```
 
@@ -81,6 +85,43 @@ CREATE TABLE producto (
    `src/main/java/ni/edu/uam/facturacion/util/DatabaseConnection.java`.
 
 Para comprobar la conexión se puede ejecutar la clase `TestConexion`, que está en el mismo paquete `util`.
+
+## Validaciones y control de errores
+
+Antes de cualquier INSERT, UPDATE o DELETE se valida la información según las reglas de la práctica:
+
+| Situación | Mensaje esperado |
+|---|---|
+| Código vacío | El código es obligatorio. |
+| Código duplicado | Ya existe un producto con ese código. |
+| Precio incorrecto | El precio debe ser un valor numérico. |
+| Existencia negativa | La existencia no puede ser negativa. |
+| Categoría no seleccionada | Debe seleccionar una categoría. |
+| Categoría con productos | No puede eliminar la categoría porque tiene productos asociados. |
+| Error SQL | No fue posible completar la operación. |
+
+## Pruebas automatizadas
+
+Las reglas de validación se prueban con JUnit 5:
+
+```bash
+./mvnw test
+```
+
+Los tests cubren las matrices de las secciones 22 y 23 del enunciado: campos obligatorios, fórmulas numéricas inválidas (`NumberFormatException`), precio menor o igual a cero, existencia negativa, duplicados y categorías inválidas.
+
+Para el reto práctico (sección 24) se recomienda correr la aplicación y recorrer estas 10 situaciones, que están controladas por validaciones o excepciones con mensajes al usuario:
+
+1. Registrar una categoría sin nombre → advertir y no guardar.
+2. Registrar una categoría correctamente.
+3. Intentar registrar la misma categoría otra vez → advertencia de duplicado.
+4. Registrar un producto sin categoría → advertencia y no guardar.
+5. Ingresar letras en el precio → error de formato.
+6. Ingresar una existencia negativa → error de validación.
+7. Registrar un producto correctamente.
+8. Intentar registrar otro producto con el mismo código → advertencia.
+9. Intentar eliminar la categoría usada por el producto → impedir y explicar.
+10. Detener el servicio de PostgreSQL y recargar → la aplicación muestra el error sin cerrarse.
 
 ## Cómo ejecutar
 
@@ -96,19 +137,26 @@ También se puede ejecutar la clase `FacturacionApplication` desde IntelliJ IDEA
 FacturacionApp/
 ├── pom.xml
 ├── README.md
+├── sql/
+│   └── schema.sql        → esquema completo de la base
 └── src/main/
     ├── java/
     │   ├── module-info.java
     │   └── ni/edu/uam/facturacion/
     │       ├── application/    → clase Application (punto de entrada)
     │       ├── controller/     → controladores de las vistas (Menú, Categoría, Producto)
-    │       ├── dao/            → acceso a datos (CategoriaDAO, ProductoDAO)
+    │       ├── dao/            → acceso a datos (CategoriaDAO, ProductoDAO, SqlError)
+    │       ├── exception/      → ValidacionException, enum Campo
     │       ├── model/          → entidades (Categoria, Producto, ...)
-    │       └── util/           → conexión JDBC, SceneManager y prueba de conexión
-    └── resources/ni/edu/uam/facturacion/
-        ├── fxml/               → vistas (menú, categorías, productos)
-        ├── images/             → logo e imágenes de productos
-        └── icons/              → íconos de los botones
+    │       ├── util/           → conexión JDBC, SceneManager, Alertas, prueba de conexión
+    │       └── validacion/     → ValidadorCategoria, ValidadorProducto
+    ├── resources/ni/edu/uam/facturacion/
+    │   ├── fxml/               → vistas (menú, categorías, productos)
+    │   ├── images/             → logo e imágenes de productos
+    │   └── icons/              → íconos de los botones
+    └── test/java/ni/edu/uam/facturacion/validacion/
+        ├── ValidadorCategoriaTest.java
+        └── ValidadorProductoTest.java
 ```
 
 ## Tecnologías
