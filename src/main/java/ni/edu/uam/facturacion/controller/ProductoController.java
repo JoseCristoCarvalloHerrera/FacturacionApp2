@@ -139,6 +139,13 @@ public class ProductoController {
 
             producto.setId(productoSeleccionado.getId());
 
+            if (productoDAO.existeCodigo(producto.getCodigo(), producto.getId())) {
+                Alertas.advertencia("Código duplicado",
+                        "Ya existe otro producto con el código \"" + producto.getCodigo() + "\".");
+                enfocar(Campo.PRODUCTO_CODIGO);
+                return;
+            }
+
             productoDAO.actualizar(producto);
 
             Alertas.exito("Producto actualizado", "El producto se actualizó correctamente.");
