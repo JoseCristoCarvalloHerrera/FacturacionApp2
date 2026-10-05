@@ -140,7 +140,16 @@ public class CategoriaController {
         }
 
         try {
+            if (categoriaDAO.tieneProductos(categoriaSeleccionada.getId())) {
+                Alertas.advertencia("Categoría con productos",
+                        "No se puede eliminar la categoría \"" + categoriaSeleccionada.getNombre()
+                                + "\" porque tiene productos asociados. "
+                                + "Desmarque \"Activa\" para desactivarla.");
+                return;
+            }
+
             categoriaDAO.eliminar(categoriaSeleccionada.getId());
+            Alertas.exito("Categoría eliminada", "La categoría se eliminó correctamente.");
             limpiar();
             cargarCategorias();
         } catch (SQLException e) {
