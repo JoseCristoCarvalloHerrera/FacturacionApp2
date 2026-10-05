@@ -15,10 +15,13 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import ni.edu.uam.facturacion.dao.CategoriaDAO;
 import ni.edu.uam.facturacion.dao.ProductoDAO;
+import ni.edu.uam.facturacion.exception.Campo;
+import ni.edu.uam.facturacion.exception.ValidacionException;
 import ni.edu.uam.facturacion.model.Categoria;
 import ni.edu.uam.facturacion.model.Producto;
 import ni.edu.uam.facturacion.util.Alertas;
 import ni.edu.uam.facturacion.util.SceneManager;
+import ni.edu.uam.facturacion.validacion.ValidadorProducto;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -101,16 +104,17 @@ public class ProductoController {
 
     @FXML
     private void guardar() {
-        Producto producto = leerFormulario();
-        if (producto == null) {
-            return;
-        }
-
         try {
+            Producto producto = obtenerProductoFormulario();
+
             productoDAO.guardar(producto);
+
             Alertas.exito("Producto registrado", "El producto se guardó correctamente.");
             limpiar();
             cargarProductos();
+        } catch (ValidacionException e) {
+            Alertas.advertencia(e.getMessage());
+            enfocar(e.getCampo());
         } catch (SQLException e) {
             Alertas.error("Error de base de datos", "No se pudo guardar: " + e.getMessage());
         }
@@ -123,18 +127,19 @@ public class ProductoController {
             return;
         }
 
-        Producto producto = leerFormulario();
-        if (producto == null) {
-            return;
-        }
-
-        producto.setId(productoSeleccionado.getId());
-
         try {
+            Producto producto = obtenerProductoFormulario();
+
+            producto.setId(productoSeleccionado.getId());
+
             productoDAO.actualizar(producto);
+
             Alertas.exito("Producto actualizado", "El producto se actualizó correctamente.");
             limpiar();
             cargarProductos();
+        } catch (ValidacionException e) {
+            Alertas.advertencia(e.getMessage());
+            enfocar(e.getCampo());
         } catch (SQLException e) {
             Alertas.error("Error de base de datos", "No se pudo actualizar: " + e.getMessage());
         }
@@ -203,48 +208,43 @@ public class ProductoController {
                 );
     }
 
-    private Producto leerFormulario() {
+    private Producto obtenerProductoFormulario() {
+
         String codigo = txtCodigo.getText().trim();
         String nombre = txtNombre.getText().trim();
         Categoria categoria = cmbCategoria.getValue();
+        String imagen = txtRutaImagen.getText().trim();
 
-        if (codigo.isEmpty() || nombre.isEmpty() || categoria == null
-                || txtPrecio.getText().isBlank() || txtExistencia.getText().isBlank()) {
-            Alertas.advertencia("Complete los campos obligatorios.");
-            return null;
-        }
-
-        BigDecimal precio;
-        int existencia;
-
-        try {
-            precio = new BigDecimal(txtPrecio.getText().trim());
-        } catch (NumberFormatException e) {
-            Alertas.advertencia("El precio debe ser un número, por ejemplo 25.50");
-            txtPrecio.requestFocus();
-            return null;
-        }
-
-        try {
-            existencia = Integer.parseInt(txtExistencia.getText().trim());
-        } catch (NumberFormatException e) {
-            Alertas.advertencia("La existencia debe ser un número entero.");
-            txtExistencia.requestFocus();
-            return null;
-        }
-
-        String rutaImagen = txtRutaImagen.getText().trim();
+        ValidadorProducto.validarCodigo(codigo);
+        ValidadorProducto.validarNombre(nombre);
+        ValidadorProducto.validarCategoria(categoria);
+        ValidadorProducto.validarRutaImagen(imagen);
 
         return new Producto(
                 null,
                 codigo,
                 nombre,
                 categoria,
-                precio,
-                existencia,
-                rutaImagen.isEmpty() ? null : rutaImagen,
+                ValidadorProducto.leerPrecio(txtPrecio.getText()),
+                ValidadorProducto.leerExistencia(txtExistencia.getText()),
+                imagen.isEmpty() ? null : imagen,
                 chkActivo.isSelected()
         );
+    }
+
+    private void enfocar(Campo campo) {
+
+        switch (campo) {
+
+            case PRODUCTO_CODIGO -> txtCodigo.requestFocus();
+            case PRODUCTO_NOMBRE -> txtNombre.requestFocus();
+            case PRODUCTO_CATEGORIA -> cmbCategoria.requestFocus();
+            case PRODUCTO_PRECIO -> txtPrecio.requestFocus();
+            case PRODUCTO_EXISTENCIA -> txtExistencia.requestFocus();
+            case PRODUCTO_IMAGEN -> txtRutaImagen.requestFocus();
+
+            default -> txtCodigo.requestFocus();
+        }
     }
 
     private void cargarCategorias() {
