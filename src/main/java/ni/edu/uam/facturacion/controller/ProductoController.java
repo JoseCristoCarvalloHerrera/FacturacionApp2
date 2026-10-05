@@ -107,6 +107,13 @@ public class ProductoController {
         try {
             Producto producto = obtenerProductoFormulario();
 
+            if (productoDAO.existeCodigo(producto.getCodigo(), null)) {
+                Alertas.advertencia("Código duplicado",
+                        "Ya existe un producto con el código \"" + producto.getCodigo() + "\".");
+                enfocar(Campo.PRODUCTO_CODIGO);
+                return;
+            }
+
             productoDAO.guardar(producto);
 
             Alertas.exito("Producto registrado", "El producto se guardó correctamente.");
