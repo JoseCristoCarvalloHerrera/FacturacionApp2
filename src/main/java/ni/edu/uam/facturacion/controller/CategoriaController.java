@@ -76,6 +76,13 @@ public class CategoriaController {
         }
 
         try {
+            if (categoriaDAO.existeNombre(categoria.getNombre(), null)) {
+                Alertas.advertencia("Nombre duplicado",
+                        "Ya existe una categoría con el nombre \"" + categoria.getNombre() + "\".");
+                enfocar(Campo.CATEGORIA_NOMBRE);
+                return;
+            }
+
             categoriaDAO.guardar(categoria);
             Alertas.exito("Categoría registrada", "La categoría se guardó correctamente.");
             limpiar();
