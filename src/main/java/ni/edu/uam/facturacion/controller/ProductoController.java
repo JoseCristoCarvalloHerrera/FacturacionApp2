@@ -174,6 +174,7 @@ public class ProductoController {
 
         try {
             productoDAO.eliminar(productoSeleccionado.getId());
+            Alertas.exito("Producto eliminado", "El producto se eliminó correctamente.");
             limpiar();
             cargarProductos();
         } catch (SQLException e) {
